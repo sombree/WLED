@@ -284,6 +284,7 @@ void fillStr2MAC(uint8_t *mac, const char *str) {
 // returns configured WiFi ID with the strongest signal (or default if no configured networks available)
 int findWiFi(bool doScan) {
   if (multiWiFi.size() <= 1) {
+    if (multiWiFi.empty()) return 0; // guard: handle empty list safely
     DEBUG_PRINTF_P(PSTR("WiFi: Defaulf SSID (%s) used.\n"), multiWiFi[0].clientSSID);
     return 0;
   }
@@ -301,7 +302,9 @@ int findWiFi(bool doScan) {
       DEBUG_PRINTF_P(PSTR(" SSID: %s (BSSID: %s) RSSI: %ddB\n"), WiFi.SSID(o).c_str(), WiFi.BSSIDstr(o).c_str(), WiFi.RSSI(o));
       for (unsigned n = 0; n < multiWiFi.size(); n++)
         if (!strcmp(WiFi.SSID(o).c_str(), multiWiFi[n].clientSSID)) {
-          bool foundBSSID = memcmp(multiWiFi[n].bssid, WiFi.BSSID(o), 6) == 0;
+          const uint8_t* _scanBSSID = WiFi.BSSID(o);
+          bool _cfgHasBSSID = false; for (int _i = 0; _i < 6; _i++) _cfgHasBSSID |= multiWiFi[n].bssid[_i];
+          bool foundBSSID = (_scanBSSID && _cfgHasBSSID) && memcmp(multiWiFi[n].bssid, _scanBSSID, 6) == 0; // guard: safe memcmp against nullptr/empty BSSID
           // find the WiFi with the strongest signal (but keep priority of entry if signal difference is not big)
           if (foundBSSID || (n < selected && WiFi.RSSI(o) > rssi-10) || WiFi.RSSI(o) > rssi) {
             rssi = foundBSSID ? 0 : WiFi.RSSI(o); // RSSI is only ever negative
