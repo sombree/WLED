@@ -2,6 +2,11 @@
 #ifndef BusWrapper_h
 #define BusWrapper_h
 
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)
+#include "esp_log.h"
+static const char* TAG = "NeoEsp32RmtX";  // needed by ESP_* macros
+#endif
+
 //#define NPB_CONF_4STEP_CADENCE
 #include "NeoPixelBus.h"
 
