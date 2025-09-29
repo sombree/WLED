@@ -11,6 +11,10 @@
 #include "soc/rtc_cntl_reg.h"
 #endif
 
+#ifdef ARDUINO_ARCH_ESP32
+#include <esp_mac.h>  // fallback MAC read from efuse
+#endif
+
 extern "C" void usePWMFixedNMI();
 
 /*
@@ -439,7 +443,19 @@ void WLED::setup()
   updateFSInfo();
 
   // generate module IDs must be done before AP setup
+#ifdef ARDUINO_ARCH_ESP32
   escapedMac = WiFi.macAddress();
+  if (escapedMac == "00:00:00:00:00:00") { // fix: fallback to efuse MAC if WiFi not started
+    uint8_t m[6] = {0};
+    if (esp_read_mac(m, ESP_MAC_WIFI_STA) == ESP_OK) {
+      char buf[18];
+      sprintf(buf, "%02X:%02X:%02X:%02X:%02X:%02X", m[0], m[1], m[2], m[3], m[4], m[5]);
+      escapedMac = buf;
+    }
+  }
+#else
+  escapedMac = WiFi.macAddress();
+#endif
   escapedMac.replace(":", "");
   escapedMac.toLowerCase();
 
